@@ -78,7 +78,7 @@ func saveValue(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		var timeout = time.NewTimer(10 * time.Second).C
+		var timeout = time.NewTimer(5 * time.Minute).C
 
 		go func() {
 
