@@ -5,7 +5,8 @@ WORKDIR /app
 ADD . /app
 
 RUN ls
-RUN go get
+RUN go get github.com/boltdb/bolt
+
 RUN go build main.go
 
 EXPOSE 8077
