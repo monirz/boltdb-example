@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,7 @@ func init() {
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	http.HandleFunc("/values", handler)
 
@@ -129,8 +131,15 @@ func getValue(w http.ResponseWriter, r *http.Request) {
 		// value := bucket.Get(key)
 		values := make(map[string]string)
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			values[string(k)] = string(v)
+			if string(v) != "" {
 
+				values[string(k)] = string(v)
+			}
+		}
+
+		if len(values) < 1 {
+			w.WriteHeader(404)
+			return errors.New("no value found")
 		}
 
 		b, err := json.Marshal(values)
@@ -138,7 +147,6 @@ func getValue(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("%v", err)
 			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
 			return err
 		}
 		w.WriteHeader(200)
@@ -148,9 +156,8 @@ func getValue(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
+			str := `{"error": ` + err.Error() + `}`
+			w.Write([]byte(str))
 		}
 	}
 
@@ -190,9 +197,17 @@ func getValueByKey(w http.ResponseWriter, r *http.Request, queryParams string) {
 
 		for _, v := range params {
 			val := bucket.Get([]byte(v))
+			fmt.Println(string(val))
+			if string(val) != "" {
 
-			values[string(v)] = string(val)
+				values[string(v)] = string(val)
+			}
 
+		}
+
+		if len(values) < 1 {
+			w.WriteHeader(404)
+			return errors.New("value not found with the provided keys")
 		}
 
 		b, err := json.Marshal(values)
@@ -200,7 +215,6 @@ func getValueByKey(w http.ResponseWriter, r *http.Request, queryParams string) {
 		if err != nil {
 			log.Printf("%v", err)
 			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
 			return err
 		}
 		w.WriteHeader(200)
@@ -209,10 +223,9 @@ func getValueByKey(w http.ResponseWriter, r *http.Request, queryParams string) {
 	})
 
 	if err != nil {
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
-		}
+		log.Println(err)
+		str := `{"error": ` + err.Error() + `}`
+		w.Write([]byte(str))
 	}
+
 }
